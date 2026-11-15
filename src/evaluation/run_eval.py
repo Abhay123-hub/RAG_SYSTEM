@@ -4,11 +4,11 @@ from pathlib import Path
 
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from app import get_runtime
 from config.settings import get_settings
+from src.core.llm import create_chat_model
 from src.evaluation.metrics import mean_score, not_found_accuracy, retrieval_hit_rate
 
 
@@ -24,8 +24,11 @@ def main() -> None:
         print("No evaluation examples configured in src/evaluation/dataset.json.")
         return
 
-    if not get_settings().openai_api_key.get_secret_value():
-        raise SystemExit("Set OPENAI_API_KEY in .env to run evaluation.")
+    settings = get_settings()
+    if settings.llm_provider == "openai" and not settings.openai_api_key.get_secret_value():
+        raise SystemExit("Set OPENAI_API_KEY in .env for OpenAI chat.")
+    if settings.llm_provider == "groq" and not settings.groq_api_key.get_secret_value():
+        raise SystemExit("Set GROQ_API_KEY in .env for Groq chat.")
 
     graph, _, ingestion = get_runtime(f"evaluation-{uuid.uuid4()}")
     pdf_paths = sorted(get_settings().upload_dir.rglob("*.pdf"))
@@ -33,8 +36,7 @@ def main() -> None:
         raise SystemExit(f"No PDFs found under {get_settings().upload_dir}. Upload PDFs in the app before evaluating.")
     for pdf_path in pdf_paths:
         ingestion.ingest(pdf_path)
-    settings = get_settings()
-    judge = ChatOpenAI(model=settings.router_model, temperature=0, api_key=settings.openai_api_key.get_secret_value()).with_structured_output(JudgeScores)
+    judge = create_chat_model(settings.router_model).with_structured_output(JudgeScores)
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", "Score answer correctness and faithfulness to the supplied context from 0 to 1. Faithfulness means every factual claim is supported by context."),

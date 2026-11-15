@@ -1,21 +1,17 @@
-from openai import RateLimitError
-from langchain_openai import OpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from config.settings import get_settings
-from src.core.decorators import retry
 
 
 class EmbeddingService:
-    """OpenAI embedding adapter with rate-limit retries."""
+    """Local Sentence Transformers embedding adapter."""
 
     def __init__(self) -> None:
         settings = get_settings()
-        self.client = OpenAIEmbeddings(model=settings.embedding_model, api_key=settings.openai_api_key.get_secret_value())
+        self.client = HuggingFaceEmbeddings(model_name=settings.embedding_model)
 
-    @retry(attempts=3, exceptions=(RateLimitError,))
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self.client.embed_documents(texts)
 
-    @retry(attempts=3, exceptions=(RateLimitError,))
     def embed_query(self, text: str) -> list[float]:
         return self.client.embed_query(text)

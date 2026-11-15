@@ -65,8 +65,11 @@ def main() -> None:
         st.session_state.chat_history = []
 
     settings = get_settings()
-    if not settings.openai_api_key.get_secret_value():
-        st.error("Set OPENAI_API_KEY in your .env file, then restart the app.")
+    if settings.llm_provider == "openai" and not settings.openai_api_key.get_secret_value():
+        st.error("Set OPENAI_API_KEY in your .env file for OpenAI chat, then restart the app.")
+        st.stop()
+    if settings.llm_provider == "groq" and not settings.groq_api_key.get_secret_value():
+        st.error("Set GROQ_API_KEY in your .env file for Groq, then restart the app.")
         st.stop()
 
     graph, vector_store, ingestion = get_runtime(st.session_state.session_id)

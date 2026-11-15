@@ -2,12 +2,12 @@ import logging
 from dataclasses import dataclass
 
 from langchain_core.messages import AIMessage, BaseMessage
-from langchain_openai import ChatOpenAI
 from langgraph.config import get_stream_writer
 
 from config.settings import get_settings
 from src.agents.router import QueryRouter
 from src.core.logger import get_logger, log_event
+from src.core.llm import create_chat_model
 from src.generation.answer_generator import AnswerGenerator
 from src.generation.citation_builder import CitationBuilder
 from src.generation.query_rewriter import QueryRewriter
@@ -93,7 +93,7 @@ class RAGNodes:
         return {"answer": "I couldn't find enough information in the uploaded documents to answer that. Try rephrasing the question or upload a relevant PDF.", "sources": []}
 
     def general_chat(self, state: GraphState) -> GraphState:
-        model = ChatOpenAI(model=get_settings().llm_model, temperature=0, api_key=get_settings().openai_api_key.get_secret_value())
+        model = create_chat_model(get_settings().llm_model)
         messages: list[BaseMessage] = self.history.trim(state.get("messages", []))
         try:
             result = model.invoke(messages or [AIMessage(content="Hello!")])

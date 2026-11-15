@@ -14,7 +14,8 @@ class ChromaVectorStore(VectorStore):
 
     def __init__(self, session_id: str, embeddings: object) -> None:
         settings = get_settings()
-        collection_id = hashlib.sha256(session_id.encode("utf-8")).hexdigest()[:20]
+        collection_key = f"{session_id}:{settings.embedding_model}"
+        collection_id = hashlib.sha256(collection_key.encode("utf-8")).hexdigest()[:20]
         Path(settings.chroma_dir).mkdir(parents=True, exist_ok=True)
         self.store = Chroma(
             collection_name=f"rag_{collection_id}",

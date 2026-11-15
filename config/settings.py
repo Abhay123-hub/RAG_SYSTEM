@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -8,10 +9,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+    llm_provider: Literal["openai", "groq"] = "openai"
     openai_api_key: SecretStr = SecretStr("")
+    groq_api_key: SecretStr = SecretStr("")
     llm_model: str = "gpt-4o"
     router_model: str = "gpt-4o-mini"
-    embedding_model: str = "text-embedding-3-small"
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = Field(default=800, gt=0)
     chunk_overlap: int = Field(default=150, ge=0)
     retrieval_k: int = Field(default=15, gt=0)

@@ -1,10 +1,10 @@
 from openai import RateLimitError
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
 
 from config.settings import get_settings
 from src.core.decorators import retry
+from src.core.llm import create_chat_model
 from src.models.schemas import Chunk
 
 
@@ -19,7 +19,7 @@ class RelevanceGrader:
 
     def __init__(self, model: object | None = None, threshold: float | None = None) -> None:
         settings = get_settings()
-        self.model = model or ChatOpenAI(model=settings.router_model, temperature=0, api_key=settings.openai_api_key.get_secret_value()).with_structured_output(GradeResult)
+        self.model = model or create_chat_model(settings.router_model).with_structured_output(GradeResult)
         self.threshold = threshold if threshold is not None else settings.score_threshold
 
     @retry(attempts=3, exceptions=(RateLimitError,))

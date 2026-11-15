@@ -3,10 +3,10 @@ from typing import Literal
 from openai import RateLimitError
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
 
 from config.settings import get_settings
 from src.core.decorators import retry
+from src.core.llm import create_chat_model
 from src.core.logger import get_logger, log_event
 from src.generation.prompts import ROUTER_SYSTEM_PROMPT
 
@@ -24,7 +24,7 @@ class QueryRouter:
 
     def __init__(self, model: object | None = None) -> None:
         settings = get_settings()
-        self.model = model or ChatOpenAI(model=settings.router_model, temperature=0, api_key=settings.openai_api_key.get_secret_value()).with_structured_output(RouteDecision)
+        self.model = model or create_chat_model(settings.router_model).with_structured_output(RouteDecision)
         self.prompt = ChatPromptTemplate.from_messages([("system", ROUTER_SYSTEM_PROMPT), ("human", "Documents: {files}\nHistory:\n{history}\n\nLatest message: {question}")])
 
     @retry(attempts=3, exceptions=(RateLimitError,))
