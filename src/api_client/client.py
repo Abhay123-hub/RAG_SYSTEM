@@ -27,9 +27,18 @@ class APIClient:
     def __init__(self, base_url: str = "http://127.0.0.1:8000", timeout: float = 120.0):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.session_id: str | None = None
 
     def _url(self, path: str) -> str:
         return f"{self.base_url}{path}"
+
+    def _session_path(self, path: str) -> str:
+        if self.session_id is None:
+            raise APIError(
+                "Initialize a session before making this request.",
+                "invalid_request",
+            )
+        return f"/api/sessions/{self.session_id}{path}"
 
     def _read_error(self, http_error: error.HTTPError) -> APIError:
         try:
@@ -86,23 +95,32 @@ class APIClient:
             raise APIError("Backend returned invalid JSON.") from decode_error
 
     def ensure_session(self) -> CreateSessionResponse:
-        payload = self._request("POST", "/sessions")
-        return CreateSessionResponse.model_validate(payload)
+        payload = self._request("POST", "/api/sessions")
+        session = CreateSessionResponse.model_validate(payload)
+        self.session_id = session.session_id
+        return session
 
     def health(self) -> dict[str, Any]:
         payload = self._request("GET", "/health")
         return payload
 
     def list_documents(self) -> ListDocumentsResponse:
-        payload = self._request("GET", "/documents")
+        payload = self._request("GET", self._session_path("/documents"))
         return ListDocumentsResponse.model_validate(payload)
 
     def upload_document(self, file_name: str, content: bytes) -> IngestDocumentResponse:
-        payload = self._request("POST", "/documents", multipart=(file_name, content))
+        payload = self._request(
+            "POST",
+            self._session_path("/documents"),
+            multipart=(file_name, content),
+        )
         return IngestDocumentResponse.model_validate(payload)
 
     def delete_document(self, document_id: str) -> None:
-        self._request("DELETE", f"/documents/{document_id}")
+        self._request(
+            "DELETE",
+            self._session_path(f"/documents/{document_id}"),
+        )
 
     def query(
         self,
@@ -114,7 +132,7 @@ class APIClient:
     ) -> QueryResponse:
         payload = self._request(
             "POST",
-            "/query",
+            self._session_path("/query"),
             json_body={
                 "query": query,
                 "conversation_id": conversation_id,
@@ -141,7 +159,7 @@ class APIClient:
             }
         ).encode("utf-8")
         req = request.Request(
-            self._url("/query/stream"),
+            self._url(self._session_path("/query/stream")),
             data=body,
             headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
             method="POST",
