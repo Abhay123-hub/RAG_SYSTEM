@@ -37,6 +37,9 @@ class ChromaVectorStore(VectorStore):
     def delete_by_file(self, file_name: str) -> None:
         self.store._collection.delete(where={"file_name": file_name})
 
+    def delete_by_document_id(self, document_id: str) -> None:
+        self.store._collection.delete(where={"file_hash": document_id})
+
     def list_files(self) -> list[dict[str, object]]:
         records = self.store._collection.get(include=["metadatas"])
         counts: dict[str, dict[str, object]] = defaultdict(dict)
