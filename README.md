@@ -156,13 +156,26 @@ The runner reports retrieval hit rate, answer score, faithfulness, and not-found
 
 ## Tests
 
-Run the unit tests with:
+Run the full test suite with:
 
 ```powershell
 python -m pytest
 ```
 
-Tests use fake model, embedding, and storage interfaces; they do not call the LLM provider or download the embedding model.
+The suite covers:
+
+- Shared Pydantic API contracts and validation
+- PDF upload validation and extractable-text checks
+- Duplicate SHA-256 content and same-name/different-content documents
+- Document listing and deletion
+- Retrieval document filters
+- Answer generation and verified citations
+- Mocked RAG integration flows
+- SSE token, done, citations, and error event payloads
+
+Tests use fake model, embedding, storage, and engine interfaces; they do not call the
+LLM provider or download the embedding model. See [architecture](docs/architecture.md)
+and [API contract](docs/api.md) documentation for details.
 
 ## Limitations
 
