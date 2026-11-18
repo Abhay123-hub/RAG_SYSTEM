@@ -18,3 +18,7 @@ class VectorStore(ABC):
 
     @abstractmethod
     def all_chunks(self) -> list[Chunk]: ...
+
+    def delete_by_document_id(self, document_id: str) -> None:
+        """Delete chunks belonging to a document SHA-256 ID."""
+        raise NotImplementedError

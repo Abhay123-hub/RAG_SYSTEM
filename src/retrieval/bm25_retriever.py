@@ -13,6 +13,12 @@ class BM25Retriever:
     """Keyword retrieval over the active session's indexed chunks."""
 
     def retrieve(self, query: str, chunks: list[Chunk], k: int, filters: dict[str, object] | None = None) -> list[Chunk]:
+        if filters and "file_hash" in filters:
+            allowed = filters["file_hash"]
+            if isinstance(allowed, dict):
+                allowed = allowed.get("$in", [])
+            hashes = set(allowed if isinstance(allowed, list) else [allowed])
+            chunks = [chunk for chunk in chunks if chunk.file_hash in hashes]
         if filters and "file_name" in filters:
             allowed = filters["file_name"]
             if isinstance(allowed, dict):
