@@ -48,7 +48,19 @@ class RAGGraphBuilder:
         )
         graph.add_conditional_edges(
             "document_check",
-            lambda _: "ready" if self.nodes.vector_store.list_files() else "empty",
+            lambda state: "ready" if (
+                self.nodes.vector_store.list_files()
+                and not state.get("filters")
+                or state.get("filters")
+                and any(
+                    chunk.file_hash in (
+                        state["filters"]["file_hash"].get("$in", [])
+                        if isinstance(state["filters"].get("file_hash"), dict)
+                        else [state["filters"].get("file_hash")]
+                    )
+                    for chunk in self.nodes.vector_store.all_chunks()
+                )
+            ) else "empty",
             {"ready": "query_rewriter", "empty": "response_formatter"},
         )
         graph.add_edge("query_rewriter", "hybrid_retriever")
